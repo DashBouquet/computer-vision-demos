@@ -3,17 +3,18 @@ import * as tf from '@tensorflow/tfjs';
 class ClassifierApi {
   constructor(config) {
     this.hostname = config.hostname;
+    this.useMobileNet = config.useMobileNet;
     this.mobilenet = false;
     this.classifier = false;
   }
   async loadModel(modelName) {
-    await this.loadMobileNet();
+    if (this.useMobileNet) await this.loadMobileNet();
     await this.loadClassifier(modelName);
   }
 
   async idbModelExists(modelName) {
     const modelsInfo = await tf.io.listModels();
-    console.log(modelsInfo);
+    console.log(Object.keys(modelsInfo));
     if (Object.keys(modelsInfo).length === 0) return false;
 
     return (
@@ -30,24 +31,12 @@ class ClassifierApi {
     try {
       if (this.mobilenet) this.mobilenet.dispose();
 
-      const modelExists = await this.idbModelExists('mobileNet');
-
-      if (modelExists) {
-        console.log('Loading mobileNet from IDB');
-        this.mobilenet = await tf.loadModel('indexeddb://mobileNet');
-      } else {
-        console.log('Loading mobileNet from local server');
-        const mobilenet = await tf.loadModel(
-          `${this.hostname}/nnModels/mobileNet/mobilenet.json`
-        );
-        const layer = mobilenet.getLayer('conv_pw_13_relu');
-        this.mobilenet = tf.model({
-          inputs: mobilenet.inputs,
-          outputs: layer.output
-        });
-
-        await this.mobilenet.save(`indexeddb://mobileNet`);
-      }
+      const mobilenet = await this.fetchModel('mobileNet');
+      const layer = mobilenet.getLayer('conv_pw_13_relu');
+      this.mobilenet = tf.model({
+        inputs: mobilenet.inputs,
+        outputs: layer.output
+      });
 
       console.log('mobileNet loaded');
     } catch (e) {
@@ -56,30 +45,43 @@ class ClassifierApi {
   }
 
   async loadClassifier(modelName) {
+    try {
+      const model = await this.fetchModel(modelName);
+      this.classifier = model;
+      console.log('classifier loaded');
+    } catch (e) {
+      throw new Error(e);
+    }
+  }
+
+  async fetchModel(modelName) {
     const modelExists = await this.idbModelExists(modelName);
+
     if (modelExists) {
       console.log(`Loading ${modelName} from IDB`);
-      this.classifier = await tf.loadModel(`indexeddb://${modelName}`);
+      const model = await tf.loadModel(`indexeddb://${modelName}`);
+      return model;
     } else {
       console.log(`Loading ${modelName} from local server`);
-      this.classifier = await tf.loadModel(
+      const model = await tf.loadModel(
         `${this.hostname}/nnModels/${modelName}/model.json`
       );
 
-      this.classifier
+      model
         .save(`indexeddb://${modelName}`)
         .then(() => console.log(`${modelName} saved to IDB`))
         .catch((err) => console.warn(err));
+      return model;
     }
-
-    console.log('classifier loaded');
   }
 
   async classifyImage(imageData) {
-    if (!this.classifier || !this.mobilenet) return false;
+    if (!this.classifier || (this.useMobileNet && !this.mobilenet))
+      return false;
 
-    const croppedImage = await this.normalizeImage(imageData);
-    const predictedClass = await this.predict(croppedImage);
+    let input = await this.normalizeImage(imageData);
+
+    const predictedClass = await this.predict(input);
     return predictedClass;
   }
 
@@ -106,10 +108,10 @@ class ClassifierApi {
     return img.slice([beginHeight, beginWidth, 0], [size, size, 3]);
   }
 
-  async predict(croppedImage) {
+  async predict(input) {
     const predictedClass = tf.tidy(() => {
-      //const embeddings = this.mobilenet.predict(croppedImage);
-      const predictions = this.classifier.predict(croppedImage);
+      if (this.useMobileNet) input = this.mobilenet.predict(input);
+      const predictions = this.classifier.predict(input);
 
       return predictions.as1D();
     });

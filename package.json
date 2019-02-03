@@ -5,7 +5,6 @@
   "dependencies": {
     "@tensorflow/tfjs": "^0.14.2",
     "@tensorflow/tfjs-converter": "^0.7.2",
-    "outernets-apps-core": "git+https://github.com/outernets/outernets-apps-core.git",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
     "react-scripts": "2.1.3"

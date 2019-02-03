@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { MediaApi } from 'outernets-apps-core';
 import { createTrainImage } from './models/requests';
 import ClassifierApi from './models/classifier';
 import Frozen from './models/frozen';
@@ -120,6 +119,20 @@ class App extends Component {
     );
   }
 
+  captureWebcam() {
+    if (navigator.mediaDevices) {
+      return navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => stream);
+    } else {
+      return Promise.reject(
+        new Error(
+          'Native web camera streaming (getUserMedia) not supported in this browser.'
+        )
+      );
+    }
+  }
+
   handleKeyPress = (event) => {
     if (this.listenKeys && this.saveSnaps !== event.key) {
       this.saveSnaps = event.key;
@@ -140,7 +153,7 @@ class App extends Component {
 
     this.loadClassifier();
 
-    MediaApi.captureWebcam().then((objectUrl) => {
+    this.captureWebcam().then((objectUrl) => {
       this.webCamLoaded(objectUrl);
     });
 
@@ -156,7 +169,8 @@ class App extends Component {
 
   loadClassifier() {
     const classifier = new ClassifierApi({
-      hostname: 'http://127.0.0.1:8085'
+      hostname: 'http://127.0.0.1:8085',
+      useMobileNet: false
     });
 
     classifier
