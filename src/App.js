@@ -14,7 +14,7 @@ class App extends Component {
     this.snapsPerSecond = 3;
     this.predictionsPerSecond = 10;
     this.predictionQueueCap = 5;
-    this.listenKeys = false;
+    this.listenKeys = true;
 
     this.state = {
       classifier: false,
@@ -31,6 +31,23 @@ class App extends Component {
     this.snapShot = this.snapShot.bind(this);
     this.classifyBox = this.classifyBox.bind(this);
   }
+
+  setup(video, cnv) {
+    const [width, height] = [window.innerWidth, window.innerHeight];
+    const webcamRatio = video.videoWidth / video.videoHeight;
+    const aspectRatio = width / height;
+
+    if (webcamRatio > aspectRatio) {
+      cnv.width = width;
+      cnv.height = width / webcamRatio;
+      cnv.style.top = 0 - (cnv.height / 2 - height / 2);
+    } else {
+      cnv.height = height;
+      cnv.width = height * webcamRatio;
+      cnv.style.left = 0 - (cnv.width / 2 - width / 2);
+    }
+  }
+
   webCamLoaded(stream) {
     this.video = document.createElement('video');
     this.video.srcObject = stream;
@@ -38,6 +55,7 @@ class App extends Component {
     document.body.appendChild(this.video);
 
     this.video.onloadedmetadata = (e) => {
+      this.setup(this.video, this.cvs);
       this.video.play();
       this.snapShot();
     };
@@ -51,7 +69,7 @@ class App extends Component {
       }
     }
 
-    window.requestAnimationFrame(this.snapShot);
+    requestAnimationFrame(this.snapShot);
   }
 
   printScore(score) {
@@ -97,25 +115,26 @@ class App extends Component {
   }
 
   updateDetectBoxes() {
-    const shift = 400;
+    const boxSize = window.innerHeight / 2;
+    const border = 5;
     this.ctx.drawImage(this.video, 0, 0, this.cvs.width, this.cvs.height);
 
-    this.ctx.strokeStyle = 'black';
-    this.ctx.lineWidth = '1';
+    this.ctx.strokeStyle = '#0F0';
+    this.ctx.lineWidth = border;
     this.ctx.rect(
-      this.cvs.width / 2 - shift,
-      this.cvs.height / 2 - 200,
-      shift,
-      shift
+      (this.cvs.width - boxSize - border) / 2,
+      (this.cvs.height - boxSize - border) / 2,
+      boxSize + border,
+      boxSize + border
     );
     this.ctx.stroke();
 
     this.outCtx.drawImage(
       this.cvs,
-      this.cvs.width / 2 - shift,
-      this.cvs.height / 2 - 200,
-      shift,
-      shift,
+      (this.cvs.width - boxSize) / 2,
+      (this.cvs.height - boxSize) / 2,
+      boxSize,
+      boxSize,
       0,
       0,
       224,
