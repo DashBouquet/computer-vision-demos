@@ -1,9 +1,5 @@
 .canvas {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
   object-fit: fill;
   transform: rotateY(180deg);
 }
@@ -15,6 +11,7 @@
   object-fit: fill;
   transform: rotateY(180deg);
   z-index: 999;
+  border: 2px solid #0f0;
   /* display: none; */
 }
 .palmDetected {
