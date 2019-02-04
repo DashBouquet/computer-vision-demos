@@ -1,10 +1,15 @@
 import React, { Component } from 'react';
-import { createTrainImage } from './models/requests';
 import ClassifierApi from './models/classifier';
 import Frozen from './models/frozen';
 import './App.css';
 
+import models from './Models';
+
+const argMax = (array) => array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
+
 const toPercent = (score) => (score * 100).toFixed(2);
+
+const getModelsPath = () => process.env.NODE_ENV === 'production' ? 'https://dashbouquet.github.io/computer-vision-demos/models/' : `models`;
 
 class App extends Component {
   constructor() {
@@ -19,7 +24,8 @@ class App extends Component {
     this.state = {
       classifier: false,
       gestIndex: 0,
-      predIndex: []
+      predIndex: [],
+      model: models[0]
     };
 
     this.gestureLoading = false;
@@ -92,24 +98,6 @@ class App extends Component {
         this.snapsInProcessing--;
         this.gestureLoading = false;
         this.setState({ predIndex: res });
-        //this.printScore(res);
-        // const idx = res > 0.5 ? 1 : 0;
-
-        // if (
-        //   this.saveSnaps !== null &&
-        //   Date.now() - this.snapLast > 1000 / this.snapsPerSecond
-        // ) {
-        //   const b64 = this.outCnv.toDataURL('image/jpeg');
-
-        //   const imageData = {
-        //     data: b64,
-        //     class: this.saveSnaps
-        //   };
-        //   createTrainImage(imageData);
-        //   this.snapLast = Date.now();
-        // }
-
-        // this.setState({ gestIndex: idx });
       });
     }
   }
@@ -167,6 +155,12 @@ class App extends Component {
     this.saveSnaps = null;
   };
 
+  componentWillUpdate(nextProps, nextState) {
+    if (nextState.model.modelName !== this.state.model.modelName) {
+      this.loadClassifier(nextState.model.modelName);
+    }
+  }
+
   componentDidMount() {
     [this.cvs.width, this.cvs.height] = [window.innerWidth, window.innerHeight];
     this.ctx = this.cvs.getContext('2d');
@@ -190,14 +184,14 @@ class App extends Component {
     });
   }
 
-  loadClassifier() {
+  loadClassifier(model) {
     const classifier = new ClassifierApi({
-      hostname: 'https://dashbouquet.github.io/computer-vision-demos/models/',
+      hostname: getModelsPath(),
       useMobileNet: false
     });
 
     classifier
-      .loadModel('hands2-93-0.9880')
+      .loadModel(model || this.state.model.modelName )
       .then(() => {
         console.warn('READY TO CLASSIFY');
         this.setState({ classifier });
@@ -208,16 +202,22 @@ class App extends Component {
   }
 
   render() {
+    const model = this.state.model;
     const detections = Array.from(this.state.predIndex) || [];
-    //const labels = ['0','1','2','3','4','5','6','7','8','9','q','w','x','z'];
-    const labels = ['close', 'open'];
+    const labels = model.labels;
+    const currentDetectionIndex = detections.length > 0 ? argMax(detections) : 0;
+    const explainer = model.explainers[currentDetectionIndex];
+    const changeModel = (modelIndex) => {
+      this.setState({model: models[modelIndex]}); 
+    }
+
     return (
       <React.Fragment>
         {this.state.gestIndex === 1 ? (
           <p className="palmDetected">PALM</p>
         ) : null}
           <div className="statsTable">
-            {detections.map((v, i) => (<div><div style={{width: `${toPercent(v)}%`, backgroundColor: 'green', whiteSpace: 'nowrap'}}>{labels[i]} {toPercent(v)}%</div></div>))}
+            {model && detections.map((v, i) => (<div key={i}><div style={{width: `${toPercent(v)}%`, backgroundColor: 'green', whiteSpace: 'nowrap'}}>{labels[i]} {toPercent(v)}%</div></div>))}
           </div>
         <canvas
           tabIndex="0"
@@ -236,6 +236,10 @@ class App extends Component {
           width="224"
           height="224"
         />
+        {model && <img src={`/models/${this.state.model.modelName}/${explainer}`} className="detectionExplainer"/>}
+        <select onChange={(evt) => { console.log(evt.target.value); changeModel(evt.target.value) }} className="modelsSwitcher">
+          {models.map((model, i) => (<option key={i} value={i}>{model.description}</option>))}
+        </select>
       </React.Fragment>
     );
   }

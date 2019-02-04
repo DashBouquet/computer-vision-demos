@@ -40,3 +40,19 @@
     border: 1px solid green;
     width: 300px; 
 }
+
+.detectionExplainer {
+  position: absolute;
+  bottom: 0px;
+  right: 5px;
+  z-index: 999;
+  display: block;
+}
+
+.modelsSwitcher {
+  position: absolute;
+  top: 0px;
+  right: 5px;
+  z-index: 999;
+  display: block;
+}

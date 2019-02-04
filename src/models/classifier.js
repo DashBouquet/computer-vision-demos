@@ -6,9 +6,10 @@ class ClassifierApi {
     this.useMobileNet = config.useMobileNet;
     this.mobilenet = false;
     this.classifier = false;
+    this.modelName = false;
   }
   async loadModel(modelName) {
-    if (this.useMobileNet) await this.loadMobileNet();
+    //if (this.useMobileNet) await this.loadMobileNet()
     await this.loadClassifier(modelName);
   }
 
@@ -48,6 +49,7 @@ class ClassifierApi {
     try {
       const model = await this.fetchModel(modelName);
       this.classifier = model;
+      this.modelName = modelName;
       console.log('classifier loaded');
     } catch (e) {
       throw new Error(e);
