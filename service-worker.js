@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/computer-vision-demos/precache-manifest.832ca3201f815b465c33e46ea24fe455.js"
+  "/computer-vision-demos/precache-manifest.b4d98682d79962b6e48a431af376cfab.js"
 );
 
 workbox.clientsClaim();
