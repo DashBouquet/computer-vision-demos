@@ -192,7 +192,7 @@ class App extends Component {
 
   loadClassifier() {
     const classifier = new ClassifierApi({
-      hostname: 'http://127.0.0.1:8000',
+      hostname: 'https://dashbouquet.github.io/computer-vision-demos/models/',
       useMobileNet: false
     });
 
