@@ -29,3 +29,17 @@
   padding: 20px;
   border-radius: 20px;
 }
+
+.statsTable {
+  position: absolute;
+  top: 0px;
+  left: 5px;
+  z-index: 999;
+  display: block;
+}
+
+.statsTable > div {
+    display: block;
+    border: 1px solid green;
+    width: 300px; 
+}

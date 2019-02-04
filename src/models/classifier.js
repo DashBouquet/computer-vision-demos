@@ -64,7 +64,7 @@ class ClassifierApi {
     } else {
       console.log(`Loading ${modelName} from local server`);
       const model = await tf.loadModel(
-        `${this.hostname}/nnModels/${modelName}/model.json`
+        `${this.hostname}/${modelName}/model.json`
       );
 
       model
@@ -119,7 +119,7 @@ class ClassifierApi {
     let palmConfidence = await predictedClass.data();
     predictedClass.dispose();
 
-    return palmConfidence[1];
+    return palmConfidence;
   }
 }
 

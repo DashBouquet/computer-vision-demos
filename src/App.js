@@ -4,6 +4,8 @@ import ClassifierApi from './models/classifier';
 import Frozen from './models/frozen';
 import './App.css';
 
+const toPercent = (score) => (score * 100).toFixed(2);
+
 class App extends Component {
   constructor() {
     super();
@@ -16,7 +18,8 @@ class App extends Component {
 
     this.state = {
       classifier: false,
-      gestIndex: 0
+      gestIndex: 0,
+      predIndex: []
     };
 
     this.gestureLoading = false;
@@ -70,24 +73,25 @@ class App extends Component {
       this.state.classifier.classifyImage(this.outCnv).then((res) => {
         this.snapsInProcessing--;
         this.gestureLoading = false;
-        this.printScore(res);
-        const idx = res > 0.5 ? 1 : 0;
+        this.setState({ predIndex: res });
+        //this.printScore(res);
+        // const idx = res > 0.5 ? 1 : 0;
 
-        if (
-          this.saveSnaps !== null &&
-          Date.now() - this.snapLast > 1000 / this.snapsPerSecond
-        ) {
-          const b64 = this.outCnv.toDataURL('image/jpeg');
+        // if (
+        //   this.saveSnaps !== null &&
+        //   Date.now() - this.snapLast > 1000 / this.snapsPerSecond
+        // ) {
+        //   const b64 = this.outCnv.toDataURL('image/jpeg');
 
-          const imageData = {
-            data: b64,
-            class: this.saveSnaps
-          };
-          createTrainImage(imageData);
-          this.snapLast = Date.now();
-        }
+        //   const imageData = {
+        //     data: b64,
+        //     class: this.saveSnaps
+        //   };
+        //   createTrainImage(imageData);
+        //   this.snapLast = Date.now();
+        // }
 
-        this.setState({ gestIndex: idx });
+        // this.setState({ gestIndex: idx });
       });
     }
   }
@@ -169,12 +173,12 @@ class App extends Component {
 
   loadClassifier() {
     const classifier = new ClassifierApi({
-      hostname: 'http://127.0.0.1:8085',
+      hostname: 'http://127.0.0.1:8000',
       useMobileNet: false
     });
 
     classifier
-      .loadModel('hands-21-0.99')
+      .loadModel('hands2-93-0.9880')
       .then(() => {
         console.warn('READY TO CLASSIFY');
         this.setState({ classifier });
@@ -185,11 +189,17 @@ class App extends Component {
   }
 
   render() {
+    const detections = Array.from(this.state.predIndex) || [];
+    //const labels = ['0','1','2','3','4','5','6','7','8','9','q','w','x','z'];
+    const labels = ['close', 'open'];
     return (
       <React.Fragment>
         {this.state.gestIndex === 1 ? (
           <p className="palmDetected">PALM</p>
         ) : null}
+          <div className="statsTable">
+            {detections.map((v, i) => (<div><div style={{width: `${toPercent(v)}%`, backgroundColor: 'green', whiteSpace: 'nowrap'}}>{labels[i]} {toPercent(v)}%</div></div>))}
+          </div>
         <canvas
           tabIndex="0"
           key={'cvsMain'}
